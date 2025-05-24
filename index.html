@@ -324,7 +324,7 @@
                 <div>
                     <p class="font-bold text-indigo-200">Welcome to the Canvas Protocol Demo!</p>
                     <p class="text-sm text-indigo-100">
-                        This page simulates a user interacting with an AI assistant. You'll see how clicking a link to external content can trigger an engaging, interactive CAPTCHA powered by Canvas Protocol, serving as a brand experience before accessing the destination page.
+                        This page simulates a user interacting with an AI assistant. When the AI references an external source (like a high-quality blog), and the user clicks to view it, they'll first encounter an engaging, interactive CAPTCHA. This CAPTCHA, hosted by the blog itself, serves as a brand experience and verifies the user before granting access to the content.
                         <br>
                         <strong>To start, please search for "best burgers in Toronto" below, or click a suggestion.</strong>
                     </p>
@@ -478,7 +478,7 @@
                     link.addEventListener('click', (e) => {
                         e.preventDefault(); 
                         llmSearchPage.classList.add('hidden'); 
-                        // foodBlogPage is NOT shown yet. It's shown only after CAPTCHA success.
+                        foodBlogPage.classList.add('hidden'); // Ensure blog is hidden initially
                         
                         // Trigger interstitial for CAPTCHA 
                         interstitialModal.classList.remove('hidden');
@@ -494,6 +494,7 @@
         interstitialCloseButton.addEventListener('click', () => {
             interstitialModal.classList.add('hidden');
             interstitialModal.classList.remove('flex');
+            llmSearchPage.classList.remove('hidden'); // Show search page again if interstitial is closed
         });
         proceedToCaptchaButton.addEventListener('click', () => {
             interstitialModal.classList.add('hidden');
@@ -506,6 +507,7 @@
             if (event.target === interstitialModal) {
                 interstitialModal.classList.add('hidden');
                 interstitialModal.classList.remove('flex');
+                llmSearchPage.classList.remove('hidden'); // Show search page again
             }
         });
 
@@ -514,12 +516,14 @@
             captchaModal.classList.add('hidden');
             captchaModal.classList.remove('flex');
             if (captchaGameActive) endCaptchaChallenge(false, "Challenge closed.");
+            llmSearchPage.classList.remove('hidden'); // Show search page again if CAPTCHA is closed without completion
         });
          captchaModal.addEventListener('click', (event) => { 
             if (event.target === captchaModal) {
                 captchaModal.classList.add('hidden');
                 captchaModal.classList.remove('flex');
                 if (captchaGameActive) endCaptchaChallenge(false, "Challenge closed.");
+                llmSearchPage.classList.remove('hidden'); // Show search page again
             }
         });
 
@@ -724,5 +728,7 @@
         });
 
     </script>
+</body>
+</html>
 </body>
 </html>
