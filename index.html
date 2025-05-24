@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Protocol - Interactive Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb; /* Even lighter gray */
+            color: #1f2937; /* Gray-800 */
+            transition: background-color 0.3s ease-in-out; /* Smooth transition for page changes */
+        }
+
+        /* LLM Search Interface Styles */
+        .llm-search-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .llm-logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #4f46e5; /* Indigo-600 */
+        }
+        .search-input {
+            width: 100%;
+            max-width: 600px;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db; /* Gray-300 */
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+        }
+        .search-button {
+            background-color: #4f46e5; /* Indigo-600 */
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .search-button:hover {
+            background-color: #4338ca; /* Indigo-700 */
+        }
+        .search-results-area {
+            margin-top: 2rem;
+            width: 100%;
+            max-width: 700px;
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            text-align: left;
+        }
+        /* Styles for LLM-like response */
+        .llm-response-intro {
+            font-size: 1rem;
+            color: #374151; /* Gray-700 */
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .llm-response-list {
+            list-style-type: decimal;
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .llm-response-list li {
+            margin-bottom: 0.5rem;
+            color: #4b5563; /* Gray-600 */
+        }
+        .llm-response-list strong {
+            color: #1f2937; /* Gray-800 */
+        }
+        .references-section {
+            margin-top: 1.5rem;
+            border-top: 1px solid #e5e7eb; /* Gray-200 */
+            padding-top: 1rem;
+        }
+        .references-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280; /* Gray-500 */
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        .reference-link {
+            font-size: 0.875rem;
+            color: #3b82f6; /* Blue-500 for links */
+            cursor: pointer;
+            text-decoration: underline;
+            display: block; /* Make each link take full width */
+            margin-bottom: 0.25rem;
+        }
+        .reference-link:hover {
+            color: #2563eb; /* Blue-600 */
+        }
+
+
+        /* Mock Blog Page Styles */
+        .blog-page-container {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .blog-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #111827; /* Gray-900 */
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #4f46e5;
+            padding-bottom: 0.5rem;
+        }
+        .blog-content p {
+            font-size: 1.125rem;
+            line-height: 1.8;
+            color: #374151; /* Gray-700 */
+            margin-bottom: 1rem;
+        }
+        .blog-content h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937; /* Gray-800 */
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.7); /* Slightly darker overlay */
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; padding: 1rem;
+        }
+        .modal-content {
+            background-color: white; padding: 1.5rem; border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            width: 100%; max-width: 550px; max-height: 95vh; /* Increased max-height slightly */
+            overflow-y: auto; position: relative;
+            text-align: left; /* Default text align for modals */
+        }
+        .modal-close-button {
+            position: absolute; top: 0.75rem; right: 0.75rem; background: none; border: none;
+            font-size: 1.75rem; line-height: 1; cursor: pointer; color: #6b7280;
+        }
+        .modal-close-button:hover { color: #1f2937; }
+
+        /* Interstitial Modal Specific Styles */
+        .interstitial-title {
+            font-size: 1.5rem; font-weight: 700; color: #1f2937; margin-bottom: 1rem; text-align: center;
+        }
+        .interstitial-text {
+            font-size: 1rem; color: #374151; line-height: 1.6; margin-bottom: 1rem;
+        }
+        .interstitial-task-description {
+            background-color: #f3f4f6; padding: 0.75rem; border-radius: 0.375rem;
+            font-size: 0.875rem; color: #4b5563; margin-bottom: 1.5rem;
+            border-left: 4px solid #4f46e5;
+        }
+        .interstitial-button {
+            background-color: #4f46e5; color: white; font-weight: 600;
+            padding: 0.6rem 1.2rem; border-radius: 0.5rem; cursor: pointer;
+            transition: background-color 0.2s; display: block; width: 100%; text-align: center;
+        }
+        .interstitial-button:hover { background-color: #4338ca; }
+
+
+        /* CAPTCHA Specific Styles (adapted from previous example) */
+        .captcha-wrapper { /* This will be the modal-content now */
+            position: relative; /* For absolute positioning of obstacles */
+            overflow: hidden; /* To contain moving obstacles if any */
+            text-align: center; /* Center CAPTCHA elements by default */
+        }
+        .brand-header {
+            text-align: center; margin-bottom: 1rem; padding: 0.75rem;
+            background-color: #8b5cf6; /* Purple-500 for "BurgerBonanza" */
+            color: white; border-radius: 0.5rem;
+        }
+        .brand-logo { font-size: 2rem; margin-bottom: 0.25rem; }
+        .target-display {
+            background-color: #ede9fe; padding: 0.75rem; border-radius: 0.5rem;
+            margin-bottom: 1rem; text-align: center;
+        }
+        .target-display h3 { color: #5b21b6; font-weight: 600; margin-bottom: 0.25rem; }
+        .target-item-visual {
+            display: flex; flex-direction: column-reverse; /* THIS FIXES THE VISUAL STACKING ORDER */
+            align-items: center; gap: 0.1rem; padding: 0.25rem;
+            border: 1px dashed #a78bfa; border-radius: 0.375rem; min-height: 100px; /* Increased min-height */
+        }
+        .target-ingredient-visual {
+            padding: 0.2rem 0.6rem; border-radius: 0.25rem; font-size: 0.75rem;
+            width: 60%; text-align: center; margin: 1px 0; /* Small margin for visual separation */
+        }
+        .ingredients-area {
+            display: flex; flex-wrap: wrap; justify-content: space-around;
+            gap: 0.75rem; margin-bottom: 1rem; min-height: 80px;
+        }
+        .ingredient {
+            width: calc(50% - 0.5rem); max-width: 110px; /* Slightly wider */ min-height: 75px;
+            padding: 0.5rem; border: 2px solid #7c3aed; border-radius: 0.5rem;
+            background-color: white; cursor: grab; user-select: none;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; font-weight: 500; font-size: 0.875rem;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06);
+        }
+        @media (min-width: 480px) { .ingredient { width: calc(33.33% - 0.5rem); } }
+        .ingredient.dragging {
+            cursor: grabbing; transform: scale(1.05);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            opacity: 0.8; z-index: 1050;
+        }
+        .ingredient.disabled { opacity: 0.5; cursor: not-allowed; background-color: #e5e7eb; }
+        .drop-zone {
+            background-color: #f5f3ff; border: 2px dashed #7c3aed; border-radius: 0.5rem;
+            min-height: 130px; display: flex; flex-direction: column-reverse; /* Stack from bottom visually */
+            align-items: center; justify-content: flex-start; /* Align to bottom for stacking */
+            padding: 0.75rem; gap: 0.25rem; margin-bottom: 1rem; color: #5b21b6;
+        }
+        .stacked-ingredient {
+            background-color: #ddd6fe; color: #4c1d95; padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem; width: 80%; text-align: center; font-weight: 500;
+            font-size: 0.875rem; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+        }
+        .timer-bar { height: 0.5rem; background-color: #e5e7eb; border-radius: 9999px; overflow: hidden; margin-bottom: 0.75rem; }
+        .timer-progress { height: 100%; background-color: #7c3aed; width: 100%; transition: width 1s linear; border-radius: 9999px; }
+        .timer-text { text-align: center; font-size: 0.75rem; color: #4b5563; margin-bottom: 1rem; }
+        .message-box {
+            display: none; padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.75rem;
+            text-align: center; font-weight: 500; font-size: 0.875rem;
+        }
+        .message-box.success { background-color: #dcfce7; /* Lighter green */ color: #166534; /* Darker green */ }
+        .message-box.failure { background-color: #fee2e2; color: #991b1b; }
+        .coupon-code {
+            font-weight: 700;
+            color: #c026d3; /* Fuchsia for coupon */
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background-color: #fce7f3; /* Pink-100 */
+            border: 1px dashed #db2777; /* Pink-500 */
+            border-radius: 0.375rem;
+        }
+        .captcha-action-button { /* Used for both reset and proceed */
+            display: block; width: fit-content; margin: 0.75rem auto 0;
+            padding: 0.5rem 1rem; background-color: #7c3aed; color: white;
+            border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 500;
+            transition: background-color 0.2s; font-size: 0.875rem;
+        }
+        .captcha-action-button:hover { background-color: #6d28d9; }
+        .captcha-action-button:disabled { background-color: #c4b5fd; cursor: not-allowed; }
+
+        .hidden { display: none !important; } /* Utility class */
+    </style>
+</head>
+<body>
+
+    <div id="llmSearchPage" class="llm-search-container">
+        <div class="llm-logo">🤖</div>
+        <h1 class="text-3xl font-bold text-gray-700 mb-2">Canvas AI Assistant</h1>
+        <p class="text-gray-500 mb-6">Ask me anything! (Try "best burgers in Toronto")</p>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search for...">
+        <button id="performSearchButton" class="search-button">Search</button>
+        <div id="searchResultsArea" class="search-results-area mt-6 hidden">
+            </div>
+    </div>
+
+    <div id="foodBlogPage" class="blog-page-container hidden">
+        <h1 class="blog-title">Toronto's Top 10 Must-Try Burgers!</h1>
+        <div class="blog-content">
+            <p>Welcome, burger aficionados! You've successfully verified your human status and are now ready to dive into the juiciest topic in Toronto – the absolute best burgers this city has to offer. Prepare your napkins, because things are about to get delicious...</p>
+            <h3>1. The "BurgerBonanza Classic" by BurgerBonanza</h3>
+            <p>A timeless masterpiece, the Classic Bonanza features a perfectly seasoned patty, melted cheddar, crisp lettuce, fresh tomatoes, and their secret Bonanza sauce, all nestled in a toasted brioche bun. It's the burger that started it all for them, and a must-try for any true burger lover. You even got a coupon for it!</p>
+            <h3>2. The "Maple Bacon Bliss" by Northern Bites</h3>
+            <p>This burger screams Canada! With thick-cut maple-glazed bacon, aged Canadian cheddar, and a hint of smoky BBQ sauce, it's a sweet and savory delight that will have you saying "eh-mazing!"</p>
+            <h3>3. The "Spicy Smasher" by Heatwave Grill</h3>
+            <p>For those who like it hot, the Spicy Smasher delivers. Featuring a double-smashed patty, jalapeño relish, pepper jack cheese, and a fiery chipotle aioli, it's a flavor explosion that's not for the faint of heart.</p>
+            <p><em>(...more amazing fictional burger reviews would continue here...)</em></p>
+            <p>We hope you enjoy exploring Toronto's vibrant burger scene. Happy eating!</p>
+        </div>
+         <button id="backToSearchButton" class="captcha-action-button mx-auto mt-8 bg-gray-500 hover:bg-gray-600">Back to Search</button>
+    </div>
+
+    <div id="interstitialModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="interstitialCloseButton" class="modal-close-button">&times;</button>
+            <h2 class="interstitial-title">Verification Required</h2>
+            <p class="interstitial-text">
+                To access the requested content and help us ensure a great experience for everyone, 
+                please complete a quick interactive challenge.
+            </p>
+            <div class="interstitial-task-description">
+                <strong>Upcoming Task:</strong> You'll be asked to assemble a "BurgerBonanza" burger by dragging ingredients into the correct order. It's fun and helps us verify you're human!
+            </div>
+            <button id="proceedToCaptchaButton" class="interstitial-button">Proceed to Verification</button>
+        </div>
+    </div>
+
+
+    <div id="captchaModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="captchaModalCloseButton" class="modal-close-button">&times;</button>
+            <div id="captchaInnerContainer" class="captcha-wrapper">
+                <div class="brand-header">
+                    <div class="brand-logo">🍔</div>
+                    <h1 class="text-xl font-bold">BurgerBonanza Challenge!</h1>
+                    <p class="text-xs">Build our "Classic Bonanza" to continue.</p>
+                </div>
+                <div class="target-display">
+                    <h3>Assemble This Burger:</h3>
+                    <div class="target-item-visual" id="targetItemVisual"></div>
+                    <p class="text-xs text-gray-500 mt-1">Drag ingredients to the area below in the correct order (bottom to top).</p>
+                </div>
+                <div class="timer-text" id="captchaTimerText">Time Remaining: 30s</div>
+                <div class="timer-bar"><div class="timer-progress" id="captchaTimerProgress"></div></div>
+                <div class="ingredients-area" id="captchaIngredientsArea"></div>
+                <div class="drop-zone" id="captchaDropZone">Drop ingredients here</div>
+                <div class="message-box" id="captchaMessageBox">
+                    </div>
+                <button class="captcha-action-button" id="captchaResetButton" disabled>Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- PAGE SECTIONS & MODALS ---
+        const llmSearchPage = document.getElementById('llmSearchPage');
+        const foodBlogPage = document.getElementById('foodBlogPage');
+        const interstitialModal = document.getElementById('interstitialModal');
+        const captchaModal = document.getElementById('captchaModal');
+        
+        // --- MODAL CLOSE BUTTONS ---
+        const interstitialCloseButton = document.getElementById('interstitialCloseButton');
+        const captchaModalCloseButton = document.getElementById('captchaModalCloseButton');
+        const proceedToCaptchaButton = document.getElementById('proceedToCaptchaButton');
+        const backToSearchButton = document.getElementById('backToSearchButton');
+
+
+        // --- LLM SEARCH LOGIC ---
+        const searchInput = document.getElementById('searchInput');
+        const performSearchButton = document.getElementById('performSearchButton');
+        const searchResultsArea = document.getElementById('searchResultsArea');
+
+        performSearchButton.addEventListener('click', simulateSearch);
+        searchInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') simulateSearch();
+        });
+
+        function simulateSearch() {
+            const query = searchInput.value.toLowerCase();
+            searchResultsArea.innerHTML = ''; 
+            searchResultsArea.classList.remove('hidden');
+
+            if (query.includes("burger") && query.includes("toronto")) {
+                let llmResponseHTML = `
+                    <p class="llm-response-intro">Okay, I found some highly-rated burger spots in Toronto that you might enjoy! Based on several local food blogs, here are a few popular choices:</p>
+                    <ol class="llm-response-list">
+                        <li><strong>The "BurgerBonanza Classic"</strong> - Known for its timeless appeal and secret sauce. Many reviewers rave about it!</li>
+                        <li><strong>"Maple Bacon Bliss" at Northern Bites</strong> - A Canadian-themed delight with sweet and savory notes.</li>
+                        <li><strong>"The Spicy Smasher" from Heatwave Grill</strong> - If you like a kick, this one comes highly recommended for its heat and flavor.</li>
+                    </ol>
+                    <p class="llm-response-intro">These are just a few highlights, and Toronto has a vibrant burger scene!</p>
+                    <div class="references-section">
+                        <h3 class="references-title">References (Click to verify & access):</h3>
+                        <a href="#" class="reference-link" data-blog="blogtoeats">1. BlogTOEats - Toronto's Top 10 Must-Try Burgers</a>
+                        <a href="#" class="reference-link" data-blog="torontoburgertimes">2. TorontoBurgerTimes - The Ultimate Burger Guide</a>
+                        <a href="#" class="reference-link" data-blog="grillmastersto">3. GrillMastersTO - Best Gourmet Burgers 2025</a>
+                    </div>
+                `;
+                searchResultsArea.innerHTML = llmResponseHTML;
+                
+                document.querySelectorAll('.reference-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault(); 
+                        interstitialModal.classList.remove('hidden');
+                        interstitialModal.classList.add('flex');
+                    });
+                });
+            } else {
+                searchResultsArea.innerHTML = '<p class="text-gray-500 p-4">Sorry, I can only provide information on "best burgers in Toronto" for this demonstration. Please try that query!</p>';
+            }
+        }
+
+        // --- INTERSTITIAL MODAL LOGIC ---
+        interstitialCloseButton.addEventListener('click', () => {
+            interstitialModal.classList.add('hidden');
+            interstitialModal.classList.remove('flex');
+        });
+        proceedToCaptchaButton.addEventListener('click', () => {
+            interstitialModal.classList.add('hidden');
+            interstitialModal.classList.remove('flex');
+            captchaModal.classList.remove('hidden');
+            captchaModal.classList.add('flex');
+            initializeCaptcha();
+        });
+         interstitialModal.addEventListener('click', (event) => { // Close on overlay click
+            if (event.target === interstitialModal) {
+                interstitialModal.classList.add('hidden');
+                interstitialModal.classList.remove('flex');
+            }
+        });
+
+
+        // --- CAPTCHA MODAL LOGIC ---
+        captchaModalCloseButton.addEventListener('click', () => {
+            captchaModal.classList.add('hidden');
+            captchaModal.classList.remove('flex');
+            if (captchaGameActive) endCaptchaChallenge(false, "Challenge closed.");
+        });
+         captchaModal.addEventListener('click', (event) => { // Close on overlay click
+            if (event.target === captchaModal) {
+                captchaModal.classList.add('hidden');
+                captchaModal.classList.remove('flex');
+                if (captchaGameActive) endCaptchaChallenge(false, "Challenge closed.");
+            }
+        });
+
+
+        // --- CAPTCHA GAME LOGIC (Adapted) ---
+        const CAPTCHA_TOTAL_TIME = 30;
+        const CAPTCHA_ALL_INGREDIENTS = [
+            { id: 'bun_base', name: 'Base Bun', color: 'bg-yellow-300', visualText: "Bottom Bun" },
+            { id: 'patty_1', name: 'Patty', color: 'bg-yellow-700', visualText: "Beef Patty" },
+            { id: 'cheese', name: 'Cheese', color: 'bg-yellow-500', visualText: "Cheese" },
+            { id: 'bun_top', name: 'Top Bun', color: 'bg-yellow-300', visualText: "Top Bun" },
+            { id: 'lettuce', name: 'Lettuce', color: 'bg-green-400', visualText: "Lettuce" }, 
+            { id: 'tomato', name: 'Tomato', color: 'bg-red-500', visualText: "Tomato Slice" } 
+        ];
+        const CAPTCHA_RECIPES = [ 
+            { name: "Classic Bonanza", ingredients: ['bun_base', 'patty_1', 'cheese', 'bun_top'] },
+            { name: "Deluxe Bonanza", ingredients: ['bun_base', 'lettuce', 'tomato', 'patty_1', 'cheese', 'bun_top'] }
+        ];
+
+        let captchaCurrentChallengeRecipe;
+        let captchaCurrentChallengeIds = [];
+        let captchaCurrentStack = [];
+        let captchaTimeLeft = CAPTCHA_TOTAL_TIME;
+        let captchaTimerInterval = null;
+        let captchaGameActive = false;
+        let captchaDraggedItem = null;
+
+        const captchaIngredientsArea = document.getElementById('captchaIngredientsArea');
+        const captchaDropZone = document.getElementById('captchaDropZone');
+        const captchaTargetItemVisual = document.getElementById('targetItemVisual');
+        const captchaTimerText = document.getElementById('captchaTimerText');
+        const captchaTimerProgress = document.getElementById('captchaTimerProgress');
+        const captchaMessageBox = document.getElementById('captchaMessageBox');
+        const captchaResetButton = document.getElementById('captchaResetButton');
+        const captchaBrandHeaderH1 = document.querySelector('#captchaInnerContainer .brand-header h1');
+        const captchaBrandHeaderP = document.querySelector('#captchaInnerContainer .brand-header p');
+
+        function shuffleArray(array) { /* Fisher-Yates shuffle */
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function setupCaptchaChallenge() {
+            captchaCurrentChallengeRecipe = CAPTCHA_RECIPES[Math.floor(Math.random() * CAPTCHA_RECIPES.length)];
+            captchaCurrentChallengeIds = [...captchaCurrentChallengeRecipe.ingredients];
+            
+            if(captchaBrandHeaderH1) captchaBrandHeaderH1.textContent = `${captchaCurrentChallengeRecipe.name} Challenge!`;
+            if(captchaBrandHeaderP) captchaBrandHeaderP.textContent = `Build our "${captchaCurrentChallengeRecipe.name}" to continue.`;
+
+            let displayIngredientsPool = captchaCurrentChallengeIds.map(id => CAPTCHA_ALL_INGREDIENTS.find(ing => ing.id === id));
+            let distractors = [];
+            let availableDistractors = CAPTCHA_ALL_INGREDIENTS.filter(ing => !captchaCurrentChallengeIds.includes(ing.id));
+            shuffleArray(availableDistractors);
+            const numDistractors = Math.min(2, availableDistractors.length);
+            for (let i = 0; i < numDistractors; i++) { distractors.push(availableDistractors[i]); }
+            displayIngredientsPool = displayIngredientsPool.concat(distractors);
+            displayIngredientsPool = shuffleArray(displayIngredientsPool);
+
+            captchaTargetItemVisual.innerHTML = '';
+            captchaCurrentChallengeIds.forEach(ingredientId => { // bottom-to-top as defined in recipe
+                const ingredientData = CAPTCHA_ALL_INGREDIENTS.find(ing => ing.id === ingredientId);
+                const visualEl = document.createElement('div');
+                visualEl.classList.add('target-ingredient-visual', ingredientData.color);
+                visualEl.textContent = ingredientData.visualText || ingredientData.name;
+                captchaTargetItemVisual.appendChild(visualEl); // CSS flex-direction: column-reverse handles stacking
+            });
+
+            captchaIngredientsArea.innerHTML = '';
+            displayIngredientsPool.forEach(ingredientData => {
+                const div = document.createElement('div');
+                div.classList.add('ingredient');
+                div.textContent = ingredientData.name;
+                div.draggable = true;
+                div.dataset.id = ingredientData.id;
+                div.addEventListener('dragstart', (e) => {
+                    if (!captchaGameActive || div.classList.contains('disabled')) { e.preventDefault(); return; }
+                    captchaDraggedItem = div;
+                    e.dataTransfer.setData('text/plain', ingredientData.id);
+                    setTimeout(() => div.classList.add('dragging'), 0);
+                });
+                div.addEventListener('dragend', () => {
+                    if (captchaDraggedItem) captchaDraggedItem.classList.remove('dragging');
+                    captchaDraggedItem = null;
+                });
+                captchaIngredientsArea.appendChild(div);
+            });
+        }
+
+        function updateCaptchaTimerDisplay() {
+            captchaTimerText.textContent = `Time Remaining: ${captchaTimeLeft}s`;
+            captchaTimerProgress.style.width = `${(captchaTimeLeft / CAPTCHA_TOTAL_TIME) * 100}%`;
+        }
+
+        function startCaptchaTimer() {
+            captchaTimeLeft = CAPTCHA_TOTAL_TIME;
+            updateCaptchaTimerDisplay();
+            if (captchaTimerInterval) clearInterval(captchaTimerInterval);
+            captchaTimerInterval = setInterval(() => {
+                captchaTimeLeft--;
+                updateCaptchaTimerDisplay();
+                if (captchaTimeLeft <= 0) endCaptchaChallenge(false, "Time's up! Please try again.");
+            }, 1000);
+        }
+
+        function updateCaptchaDropZoneDisplay() {
+            captchaDropZone.innerHTML = '';
+            if (captchaCurrentStack.length === 0) {
+                captchaDropZone.textContent = 'Drop ingredients here';
+            } else {
+                captchaCurrentStack.forEach(ingredientId => { // bottom-to-top as dropped
+                    const ingredientData = CAPTCHA_ALL_INGREDIENTS.find(ing => ing.id === ingredientId);
+                    const div = document.createElement('div');
+                    div.classList.add('stacked-ingredient');
+                    div.textContent = ingredientData.name;
+                    captchaDropZone.appendChild(div); // CSS flex-direction: column-reverse handles visual stacking
+                });
+            }
+        }
+
+        function endCaptchaChallenge(success, message) {
+            captchaGameActive = false;
+            clearInterval(captchaTimerInterval);
+            
+            let fullMessageHTML = `<p>${message}</p>`;
+            if (success) {
+                fullMessageHTML += `<div class="coupon-code">🎉 Your Coupon: BURGER10 (10% Off BurgerBonanza!) 🎉</div>`;
+                fullMessageHTML += `<button id="proceedToBlogButton" class="captcha-action-button mt-4">Proceed to Blog</button>`;
+            }
+            
+            captchaMessageBox.innerHTML = fullMessageHTML; 
+            captchaMessageBox.className = 'message-box';
+            captchaMessageBox.classList.add(success ? 'success' : 'failure');
+            captchaMessageBox.style.display = 'block';
+            captchaResetButton.disabled = false;
+            document.querySelectorAll('#captchaIngredientsArea .ingredient').forEach(el => el.draggable = false);
+
+            if (success) {
+                const proceedButton = document.getElementById('proceedToBlogButton');
+                if(proceedButton) {
+                    proceedButton.addEventListener('click', () => {
+                        captchaModal.classList.add('hidden');
+                        captchaModal.classList.remove('flex');
+                        llmSearchPage.classList.add('hidden'); 
+                        foodBlogPage.classList.remove('hidden'); 
+                    });
+                }
+            }
+        }
+
+        function initializeCaptcha() {
+            captchaGameActive = true;
+            captchaCurrentStack = [];
+            captchaDraggedItem = null;
+            captchaMessageBox.innerHTML = ''; // Clear message box content
+            captchaMessageBox.style.display = 'none';
+            captchaResetButton.disabled = true;
+            document.querySelectorAll('#captchaIngredientsArea .ingredient').forEach(el => {
+                el.classList.remove('disabled');
+                el.draggable = true;
+            });
+            setupCaptchaChallenge();
+            updateCaptchaDropZoneDisplay();
+            startCaptchaTimer();
+        }
+
+        captchaDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (captchaGameActive) e.dataTransfer.dropEffect = 'move';
+        });
+        captchaDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (!captchaGameActive || !captchaDraggedItem) return;
+            const droppedIngredientId = e.dataTransfer.getData('text/plain');
+            if (captchaCurrentChallengeIds[captchaCurrentStack.length] === droppedIngredientId) {
+                captchaCurrentStack.push(droppedIngredientId);
+                captchaDraggedItem.classList.add('disabled');
+                captchaDraggedItem.draggable = false;
+                updateCaptchaDropZoneDisplay();
+                if (captchaCurrentStack.length === captchaCurrentChallengeIds.length) {
+                    endCaptchaChallenge(true, `Correct! You built the "${captchaCurrentChallengeRecipe.name}"!`);
+                }
+            } else {
+                endCaptchaChallenge(false, "Incorrect ingredient or order. Try again!");
+            }
+            if (captchaDraggedItem) captchaDraggedItem.classList.remove('dragging');
+            captchaDraggedItem = null;
+        });
+        document.addEventListener('dragstart', function(event) { // Global listener
+            if (event.target.classList && event.target.classList.contains('ingredient') && event.target.classList.contains('disabled')) {
+                event.preventDefault();
+            }
+        }, true);
+        
+        captchaResetButton.addEventListener('click', initializeCaptcha);
+
+        // Back to Search button on Blog Page
+        backToSearchButton.addEventListener('click', () => {
+            foodBlogPage.classList.add('hidden');
+            llmSearchPage.classList.remove('hidden');
+            searchResultsArea.classList.add('hidden'); // Also hide old search results
+            searchInput.value = ''; // Clear search input
+        });
+
+    </script>
+</body>
+</html>
